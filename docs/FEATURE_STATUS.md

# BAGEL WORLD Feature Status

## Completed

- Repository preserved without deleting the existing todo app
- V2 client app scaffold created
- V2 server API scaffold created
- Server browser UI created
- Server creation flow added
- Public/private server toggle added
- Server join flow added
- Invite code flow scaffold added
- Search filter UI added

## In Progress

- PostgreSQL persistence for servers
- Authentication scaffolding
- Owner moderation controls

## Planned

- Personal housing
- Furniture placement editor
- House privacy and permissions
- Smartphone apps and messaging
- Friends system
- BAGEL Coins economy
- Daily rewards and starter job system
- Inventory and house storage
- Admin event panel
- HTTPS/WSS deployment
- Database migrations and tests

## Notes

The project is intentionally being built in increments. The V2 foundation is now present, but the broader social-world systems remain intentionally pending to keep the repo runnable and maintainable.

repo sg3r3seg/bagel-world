@@ -1,0 +1,107 @@
+# BAGEL WORLD — Development Plan
+
+## Objective
+
+Continue development of BAGEL WORLD incrementally while preserving the existing `todo-app` project and avoiding any destructive changes to currently working code.
+
+## Current state
+
+- The repo currently contains a working todo application.
+- There is no verified previous BAGEL WORLD implementation in the repository.
+- Because of that, development proceeds by adding BAGEL WORLD V2 architecture alongside the existing app rather than replacing it.
+
+## Strategy
+
+1. Build a stable client/server foundation.
+2. Implement the server browser and room creation workflow.
+3. Add persistence and moderation scaffolding.
+4. Extend to housing, smartphone, economy and social systems.
+5. Add tests and deployment guidance.
+
+## Milestones
+
+### Milestone 1 — Server Browser Foundation
+- [x] Add client app scaffold
+- [x] Add server API scaffold
+- [x] Add server discovery list UI
+- [x] Add create server form
+- [x] Add private/public toggle
+- [x] Add join by password and invite code flow
+- [ ] Persist server records in PostgreSQL
+- [ ] Add owner management and moderation controls
+
+### Milestone 2 — Personal Housing
+- [ ] Home assignment and ownership
+- [ ] Furniture purchase and placement editor
+- [ ] Save furniture positions and rotation
+- [ ] Privacy and lock controls
+- [ ] Friend decor permissions
+- [ ] Invite-based visiting
+
+### Milestone 3 — Smartphone System
+- [ ] Player phone numbers
+- [ ] Contact list and private messaging
+- [ ] Simulated calls and notifications
+- [ ] Block/mute/report tools
+- [ ] Permissioned access controls
+
+### Milestone 4 — Social & Economy
+- [ ] Friend requests and friend search
+- [ ] Online/offline status and parties
+- [ ] BAGEL Coins and earnings
+- [ ] Shop inventory and purchase validation
+- [ ] In-game notifications
+
+### Milestone 5 — Production Hardening
+- [ ] PostgreSQL schema migrations
+- [ ] Authentication and authorization
+- [ ] HTTPS/WSS deployment setup
+- [ ] Automated tests
+- [ ] CI/CD pipeline
+
+## Incremental implementation rule
+
+Features are implemented in small, runnable units. The project remains runnable between milestones.
+
+## Security principles
+
+- Validate every player action on the server
+- Never trust client-provided balances, permissions or move data
+- Store server-generated values, not client-chosen values
+- Use permission checks before allowlist actions
+- Persist all data through database transactions where needed
+
+## Database direction
+
+Core tables to add later:
+- players
+- servers
+- members
+- server_bans
+- houses
+- furniture_items
+- house_permissions
+- phone_contacts
+- phone_messages
+- friend_requests
+- inventory
+- purchases
+- jobs
+
+## Deployment
+
+Production must use:
+- HTTPS for browser traffic
+- WSS for realtime multiplayer traffic
+- a managed PostgreSQL service
+- reverse proxy termination (nginx or Caddy)
+- secret management via environment variables
+
+## Testing plan
+
+- permissions tests
+- purchase validation tests
+- server join validation tests
+- persistent data round-trip tests
+- moderation/admin action tests
+- mobile UI smoke tests

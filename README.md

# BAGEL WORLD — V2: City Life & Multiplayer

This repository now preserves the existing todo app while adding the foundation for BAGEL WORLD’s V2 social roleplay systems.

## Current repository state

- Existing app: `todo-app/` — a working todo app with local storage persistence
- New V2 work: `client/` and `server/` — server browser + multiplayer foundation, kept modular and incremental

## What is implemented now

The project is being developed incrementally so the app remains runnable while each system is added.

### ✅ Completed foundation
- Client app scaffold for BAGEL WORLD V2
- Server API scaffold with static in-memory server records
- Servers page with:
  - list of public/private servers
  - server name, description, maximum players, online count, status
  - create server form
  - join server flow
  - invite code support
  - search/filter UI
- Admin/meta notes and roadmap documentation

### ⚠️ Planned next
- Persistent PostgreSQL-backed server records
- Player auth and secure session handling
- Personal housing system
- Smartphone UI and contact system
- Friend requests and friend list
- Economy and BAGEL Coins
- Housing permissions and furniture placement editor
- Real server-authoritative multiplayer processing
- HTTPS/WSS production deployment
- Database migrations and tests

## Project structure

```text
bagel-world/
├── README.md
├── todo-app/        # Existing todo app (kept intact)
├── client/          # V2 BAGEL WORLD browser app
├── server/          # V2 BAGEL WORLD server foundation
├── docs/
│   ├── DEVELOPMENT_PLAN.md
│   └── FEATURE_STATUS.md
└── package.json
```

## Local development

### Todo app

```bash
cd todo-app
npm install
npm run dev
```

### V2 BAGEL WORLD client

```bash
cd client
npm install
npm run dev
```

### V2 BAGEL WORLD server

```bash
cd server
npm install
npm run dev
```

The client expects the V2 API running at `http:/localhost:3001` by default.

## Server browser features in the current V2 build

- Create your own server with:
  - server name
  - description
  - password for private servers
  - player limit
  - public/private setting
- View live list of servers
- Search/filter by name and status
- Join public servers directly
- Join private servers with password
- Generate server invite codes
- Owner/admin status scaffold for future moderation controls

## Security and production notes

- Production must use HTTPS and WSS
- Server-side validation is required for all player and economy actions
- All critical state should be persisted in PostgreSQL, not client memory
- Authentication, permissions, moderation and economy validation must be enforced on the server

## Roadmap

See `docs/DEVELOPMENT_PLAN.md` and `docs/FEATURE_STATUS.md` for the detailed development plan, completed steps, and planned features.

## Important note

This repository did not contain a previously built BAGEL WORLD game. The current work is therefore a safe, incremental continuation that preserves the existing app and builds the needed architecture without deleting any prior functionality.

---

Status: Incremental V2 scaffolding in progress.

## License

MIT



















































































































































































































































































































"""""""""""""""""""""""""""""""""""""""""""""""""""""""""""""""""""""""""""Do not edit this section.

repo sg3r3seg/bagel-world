@@ -1,0 +1,108 @@
+# BAGEL WORLD — V2: City Life & Multiplayer
+
+This repository now preserves the existing todo app while adding the foundation for BAGEL WORLD’s V2 social roleplay systems.
+
+## Current repository state
+
+- Existing app: `todo-app/` — a working todo app with localStorage persistence
+- New V2 work: `client/` and `server/` — server browser + multiplayer foundation, kept modular and incremental
+
+## What is implemented now
+
+The project is being developed incrementally so the app remains runnable while each system is added.
+
+### ✅ Completed foundation
+- Client app scaffold for BAGEL WORLD V2
+- Server API scaffold with static in-memory server records
+- Servers page with:
+  - list of public/private servers
+  - server name, description, maximum players, online count, status
+  - create server form
+  - join server flow
+  - invite code support
+  - search/filter UI
+- Admin/meta notes and roadmap documentation
+
+### ⚠️ Planned next
+- Persistent PostgreSQL-backed server records
+- Player auth and secure session handling
+- Personal housing system
+- Smartphone UI and contact system
+- Friend requests and friend list
+- Economy and BAGEL Coins
+- Housing permissions and furniture placement editor
+- Real server-authoritative multiplayer processing
+- HTTPS/WSS production deployment
+- Database migrations and tests
+
+## Project structure
+
+```text
+bagel-world/
+├── README.md
+├── todo-app/        # Existing todo app (kept intact)
+├── client/          # V2 BAGEL WORLD browser app
+├── server/          # V2 BAGEL WORLD server foundation
+├── docs/
+│   ├── DEVELOPMENT_PLAN.md
+│   └── FEATURE_STATUS.md
+└── package.json
+```
+
+## Local development
+
+### Todo app
+
+```bash
+cd todo-app
+npm install
+npm run dev
+```
+
+### V2 BAGEL WORLD client
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+### V2 BAGEL WORLD server
+
+```bash
+cd server
+npm install
+npm run dev
+```
+
+The client expects the V2 API running at `http://localhost:3001` by default.
+
+## Server browser features in the current V2 build
+
+- Create your own server with:
+  - server name
+  - description
+  - password for private servers
+  - player limit
+  - public/private setting
+- View live list of servers
+- Search/filter by name and status
+- Join public servers directly
+- Join private servers with password
+- Generate server invite codes
+- Owner/admin status scaffold for future moderation controls
+
+## Security and production notes
+
+- Production must use HTTPS and WSS
+- Server-side validation is required for all player and economy actions
+- All critical state should be persisted in PostgreSQL, not client memory
+- Authentication, permissions, moderation and economy validation must be enforced on the server
+
+## Roadmap
+
+See `docs/DEVELOPMENT_PLAN.md` and `docs/FEATURE_STATUS.md` for the detailed development plan, completed steps, and planned features.
+
+## Important note
+
+This repository did not contain a previously built BAGEL WORLD game. The current work is therefore a safe, incremental continuation that preserves the existing app and builds the needed architecture without deleting any prior functionality.

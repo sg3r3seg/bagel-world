@@ -1,0 +1,139 @@
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import { randomUUID } from 'node:crypto';
+
+const app = express();
+const port = Number(process.env.PORT || 3001);
+const host = process.env.HOST || '0.0.0.0';
+
+app.use(cors({ origin: process.env.CLIENT_URL || '*' }));
+app.use(express.json());
+
+type ServerStatus = 'online' | 'maintenance' | 'full';
+
+type ServerRecord = {
+  id: string;
+  name: string;
+  description: string;
+  isPrivate: boolean;
+  password?: string;
+  maxPlayers: number;
+  onlinePlayers: number;
+  status: ServerStatus;
+  inviteCode: string;
+  ownerName: string;
+};
+
+const servers: ServerRecord[] = [
+  {
+    id: 'server-1',
+    name: 'BAGEL Downtown',
+    description: 'Central city hub for social events and roleplay.',
+    isPrivate: false,
+    maxPlayers: 20,
+    onlinePlayers: 12,
+    status: 'online',
+    inviteCode: 'BAGEL-DT',
+    ownerName: 'Maya',
+  },
+  {
+    id: 'server-2',
+    name: 'Night Market RP',
+    description: 'Private street roleplay and live DJs.',
+    isPrivate: true,
+    password: 'bagel123',
+    maxPlayers: 12,
+    onlinePlayers: 8,
+    status: 'online',
+    inviteCode: 'BAGEL-NM',
+    ownerName: 'Ari',
+  },
+  {
+    id: 'server-3',
+    name: 'Sunset Bay',
+    description: 'Relaxed social and casual hangouts.',
+    isPrivate: false,
+    maxPlayers: 20,
+    onlinePlayers: 20,
+    status: 'full',
+    inviteCode: 'BAGEL-SB',
+    ownerName: 'Roi',
+  },
+];
+
+app.get('/api/health', (_req, res) => {
+  res.json({ ok: true, service: 'bagel-world-server' });
+});
+
+app.get('/api/servers', (_req, res) => {
+  res.json({ servers });
+});
+
+app.post('/api/servers', (req, res) => {
+  const { name, description, isPrivate, password, maxPlayers } = req.body || {};
+
+  if (!name || typeof name !== 'string') {
+    return res.status(400).json({ message: 'Server name is required' });
+  }
+
+  const sanitizedName = name.trim();
+  const sanitizedDescription = (description || '').trim() || 'Community server';
+  const normalizedPrivate = Boolean(isPrivate);
+  const normalizedLimit = Math.min(Math.max(Number(maxPlayers) || 20, 2), 20);
+
+  const server: ServerRecord = {
+    id: randomUUID(),
+    name: sanitizedName,
+    description: sanitizedDescription,
+    isPrivate: normalizedPrivate,
+    password: normalizedPrivate ? String(password || '') : undefined,
+    maxPlayers: normalizedLimit,
+    onlinePlayers: 1,
+    status: 'online',
+    inviteCode: `BAGEL-${sanitizedName.slice(0, 4).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
+    ownerName: 'Creator',
+  };
+
+  servers.push(server);
+  res.status(201).json({ message: 'Server created successfully', server });
+});
+
+app.post('/api/servers/:id/join', (req, res) => {
+  const { id } = req.params;
+  const { password } = req.body || {};
+  const server = servers.find((entry) => entry.id === id);
+
+  if (!server) {
+    return res.status(404).json({ message: 'Server not found' });
+  }
+
+  if (server.isPrivate && server.password && server.password !== String(password || '')) {
+    return res.status(401).json({ message: 'Incorrect password' });
+  }
+
+  if (server.onlinePlayers >= server.maxPlayers) {
+    server.status = 'full';
+    return res.status(409).json({ message: 'Server is full' });
+  }
+
+  server.onlinePlayers = Math.min(server.onlinePlayers + 1, server.maxPlayers);
+  server.status = server.onlinePlayers >= server.maxPlayers ? 'full' : 'online';
+
+  res.json({ message: `Joined ${server.name}`, server });
+});
+
+app.post('/api/servers/:id/invite', (req, res) => {
+  const { id } = req.params;
+  const server = servers.find((entry) => entry.id === id);
+
+  if (!server) {
+    return res.status(404).json({ message: 'Server not found' });
+  }
+
+  res.json({ inviteCode: server.inviteCode });
+});
+
+app.listen(port, host, () => {
+  console.log(`BAGEL WORLD server running on http://${host}:${port}`);
+});

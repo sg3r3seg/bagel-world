@@ -1,0 +1,248 @@
+import { useEffect, useMemo, useState } from 'react';
+
+type ServerStatus = 'online' | 'maintenance' | 'full';
+
+type ServerRecord = {
+  id: string;
+  name: string;
+  description: string;
+  isPrivate: boolean;
+  password?: string;
+  maxPlayers: number;
+  onlinePlayers: number;
+  status: ServerStatus;
+  inviteCode?: string;
+  ownerName: string;
+};
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+function App() {
+  const [servers, setServers] = useState<ServerRecord[]>([]);
+  const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState('');
+  const [form, setForm] = useState({
+    name: '',
+    description: '',
+    password: '',
+    isPrivate: false,
+    maxPlayers: 20,
+  });
+  const [news, setNews] = useState('BAGEL Community • Live city events');
+  const [inviteCode, setInviteCode] = useState('');
+  const [message, setMessage] = useState('');
+
+  const fetchServers = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/servers`);
+      const data = await response.json();
+      setServers(data.servers || []);
+    } catch (error) {
+      console.error('Failed to load servers', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchServers();
+  }, []);
+
+  const visibleServers = useMemo(() => {
+    return servers.filter((server) => {
+      const matchesSearch = server.name.toLowerCase().includes(search.toLowerCase());
+      const matchesFilter =
+        filter === 'all' ||
+        (filter === 'public' && !server.isPrivate) ||
+        (filter === 'private' && server.isPrivate) ||
+        (filter === 'online' && server.status === 'online') ||
+        (filter === 'full' && server.status === 'full');
+
+      return matchesSearch && matchesFilter;
+    });
+  }, [servers, search, filter]);
+
+  const createServer = async () => {
+    if (!form.name.trim()) {
+      setMessage('יש להזין שם לשרת');
+      return;
+    }
+
+    const response = await fetch(`${API_URL}/api/servers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...form,
+        name: form.name.trim(),
+        description: form.description.trim() || 'שרת קהילה BAGEL',
+      }),
+    });
+
+    const data = await response.json();
+    setMessage(data.message || 'השרת נוצר');
+    setForm({ name: '', description: '', password: '', isPrivate: false, maxPlayers: 20 });
+    fetchServers();
+  };
+
+  const joinServer = async (serverId: string, password?: string) => {
+    const response = await fetch(`${API_URL}/api/servers/${serverId}/join`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
+    const data = await response.json();
+    setMessage(data.message || 'הצטרפת לשרת');
+    fetchServers();
+  };
+
+  const generateInvite = async (serverId: string) => {
+    const response = await fetch(`${API_URL}/api/servers/${serverId}/invite`, {
+      method: 'POST',
+    });
+    const data = await response.json();
+    setInviteCode(data.inviteCode || '');
+    setMessage(`קוד הזמנה: ${data.inviteCode || ''}`);
+  };
+
+  return (
+    <div className="app-shell" dir="rtl">
+      <header className="topbar">
+        <div className="brand">BAGEL WORLD</div>
+        <nav className="menu">
+          <button type="button">בית</button>
+          <button type="button" className="active">שרתים</button>
+          <button type="button">בית אישי</button>
+          <button type="button">טלפון</button>
+        </nav>
+      </header>
+
+      <main className="main-panel">
+        <section className="hero-banner">
+          <div>
+            <p className="eyebrow">BAGEL Community</p>
+            <h1>עולם הקהילה שלך</h1>
+            <p>{news}</p>
+          </div>
+          <button type="button" className="primary-button">הצטרף עכשיו</button>
+        </section>
+
+        <section className="controls-grid">
+          <div className="card server-browser">
+            <div className="section-header">
+              <h2>Servers</h2>
+              <div className="search-wrap">
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="חיפוש שרת..."
+                />
+              </div>
+            </div>
+
+            <div className="filter-row">
+              <select value={filter} onChange={(event) => setFilter(event.target.value)}>
+                <option value="all">הכל</option>
+                <option value="public">ציבוריים</option>
+                <option value="private">פרטיים</option>
+                <option value="online">פעילים</option>
+                <option value="full">מלאים</option>
+              </select>
+              <button type="button" onClick={fetchServers}>רענן</button>
+            </div>
+
+            <div className="server-list">
+              {visibleServers.length === 0 && <p className="empty">אין שרתים תואמים לחיפוש</p>}
+
+              {visibleServers.map((server) => (
+                <div className="server-item" key={server.id}>
+                  <div className="server-main">
+                    <div>
+                      <h3>{server.name}</h3>
+                      <p>{server.description}</p>
+                    </div>
+                    <span className={`status ${server.status}`}>{server.status}</span>
+                  </div>
+
+                  <div className="server-meta">
+                    <span>{server.onlinePlayers}/{server.maxPlayers} players</span>
+                    <span>{server.isPrivate ? 'Private' : 'Public'}</span>
+                    <span>Owner: {server.ownerName}</span>
+                  </div>
+
+                  <div className="server-actions">
+                    <button
+                      type="button"
+                      className="primary-button"
+                      onClick={() => joinServer(server.id, server.isPrivate ? window.prompt('הזן סיסמה לשרת') || '' : undefined)}
+                    >
+                      Join Server
+                    </button>
+                    <button type="button" onClick={() => generateInvite(server.id)}>Copy Invite</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <aside className="card create-box">
+            <h2>יצירת שרת</h2>
+
+            <label>
+              שם שרת
+              <input
+                value={form.name}
+                onChange={(event) => setForm({ ...form, name: event.target.value })}
+              />
+            </label>
+
+            <label>
+              תיאור
+              <textarea
+                value={form.description}
+                onChange={(event) => setForm({ ...form, description: event.target.value })}
+              />
+            </label>
+
+            <label className="checkbox-row">
+              <input
+                type="checkbox"
+                checked={form.isPrivate}
+                onChange={(event) => setForm({ ...form, isPrivate: event.target.checked })}
+              />
+              שרת פרטי
+            </label>
+
+            {form.isPrivate && (
+              <label>
+                סיסמה
+                <input
+                  type="password"
+                  value={form.password}
+                  onChange={(event) => setForm({ ...form, password: event.target.value })}
+                />
+              </label>
+            )}
+
+            <label>
+              מגבלת שחקנים
+              <input
+                type="number"
+                min={2}
+                max={20}
+                value={form.maxPlayers}
+                onChange={(event) => setForm({ ...form, maxPlayers: Number(event.target.value) || 20 })}
+              />
+            </label>
+
+            <button type="button" className="primary-button wide" onClick={createServer}>
+              Create Server
+            </button>
+
+            {inviteCode && <div className="invite-box">קוד הזמנה: {inviteCode}</div>}
+            {message && <div className="notice">{message}</div>}
+          </aside>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+export default App;
